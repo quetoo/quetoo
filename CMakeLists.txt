@@ -11,11 +11,15 @@ target_architecture (ARCH)
 set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
 set (CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -fPIC")
 set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-no-undefined,-allow-multiple-definition")
-set (COMMON_C_FLAGS "-std=c11 -pipe -fwrapv -fno-strict-aliasing -fomit-frame-pointer -Wall -Wno-unknown-pragmas -Wno-unused-parameter -Wno-unused-variable -Wno-unused-but-set-variable")
+set (COMMON_C_FLAGS "-pipe -fwrapv -fno-strict-aliasing -fomit-frame-pointer -Wall -Wno-unknown-pragmas -Wno-unused-parameter -Wno-unused-variable -Wno-unused-but-set-variable")
 set (OBJ_SRC_DIR "deps/Objectively/Sources")
 set (OBJMVC_SRC_DIR "deps/ObjectivelyMVC/Sources")
 
 # libraries
+
+if (UNIX)
+	set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lpthread -lm -lrt -ldl")
+endif()
 
 if (WIN32 OR CYGWIN)
 	set (OPENGL_LIB "opengl32")
