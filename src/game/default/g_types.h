@@ -28,7 +28,7 @@
  * @brief Game protocol version (protocol minor version). To be incremented
  * whenever the game protocol changes.
  */
-#define PROTOCOL_MINOR 1010
+#define PROTOCOL_MINOR 1011
 
 /**
  * @brief Game-specific server protocol commands. These are parsed directly by
@@ -90,8 +90,10 @@ typedef enum {
 	STAT_DEATHS,
 	STAT_HEALTH,
 	STAT_HEALTH_ICON,
+	STAT_HELDFLAG,
 	STAT_PICKUP_ICON,
 	STAT_PICKUP_STRING,
+	STAT_QUAD_TIME,
 	STAT_READY,
 	STAT_ROUND,
 	STAT_SCORES,
@@ -697,6 +699,9 @@ typedef struct {
 	char skin[MAX_QPATH];
 	g_hand_t hand;
 
+	uint16_t handicap; // current handicap inverse percentage from 0 to 100
+	uint16_t handicap_next; // handicap to use next respawn
+  
 	g_team_t *team; // current team (good/evil)
 	int32_t color; // weapon effect colors
 

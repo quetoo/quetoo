@@ -41,6 +41,7 @@ cvar_t *g_force_demo;
 cvar_t *g_force_screenshot;
 cvar_t *g_gameplay;
 cvar_t *g_gravity;
+cvar_t *g_handicap;
 cvar_t *g_match;
 cvar_t *g_max_entities;
 cvar_t *g_motd;
@@ -894,6 +895,8 @@ void G_Init(void) {
 	g_force_screenshot = gi.Cvar("g_force_screenshot", "0", CVAR_SERVER_INFO, "Force all players to take a screenshot");
 	g_gameplay = gi.Cvar("g_gameplay", "0", CVAR_SERVER_INFO, "Selects deathmatch, duel, arena, or instagib combat");
 	g_gravity = gi.Cvar("g_gravity", "800", CVAR_SERVER_INFO, NULL);
+	g_handicap = gi.Cvar("g_handicap", "1", CVAR_SERVER_INFO,
+			"Allows usage of player handicap. 0 disallows handicap, 1 allows handicap, 2 allows handicap but disables damage reduction. (default 1)");
 	g_match = gi.Cvar("g_match", "0", CVAR_SERVER_INFO, "Enables match play requiring players to ready");
 	g_max_entities = gi.Cvar("g_max_entities", "1024", CVAR_LATCH, NULL);
 	g_motd = gi.Cvar("g_motd", "", CVAR_SERVER_INFO, "Message of the day, shown to clients on initial connect");
@@ -918,6 +921,7 @@ void G_Init(void) {
 
 	dedicated = gi.Cvar("dedicated", "0", CVAR_NO_SET, NULL);
 
+	G_InitVote();
 
 	// initialize entities and clients for this game
 	g_game.entities = gi.Malloc(g_max_entities->integer * sizeof(g_entity_t), MEM_TAG_GAME);
@@ -956,6 +960,8 @@ void G_Shutdown(void) {
 	G_MySQL_Shutdown();
 	G_MapList_Shutdown();
 	G_Ai_Shutdown();
+
+	G_ShutdownVote();
 
 	gi.FreeTag(MEM_TAG_GAME_LEVEL);
 	gi.FreeTag(MEM_TAG_GAME);

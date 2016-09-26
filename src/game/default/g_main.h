@@ -51,6 +51,7 @@ extern cvar_t *g_force_demo;
 extern cvar_t *g_force_screenshot;
 extern cvar_t *g_gameplay;
 extern cvar_t *g_gravity;
+extern cvar_t *g_handicap;
 extern cvar_t *g_match;
 extern cvar_t *g_max_entities;
 extern cvar_t *g_motd;

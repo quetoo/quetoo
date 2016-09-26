@@ -817,6 +817,9 @@ static void G_ClientRespawn_(g_entity_t *ent) {
 		ent->client->locals.persistent.ready = false;
 	}
 	else { // spawn an active client
+		ent->client->locals.persistent.handicap = ent->client->locals.persistent.handicap_next;
+		uint16_t handicap = ent->client->locals.persistent.handicap;
+		
 		ent->class_name = "client";
 
 		ent->solid = SOLID_BOX;
@@ -836,8 +839,8 @@ static void G_ClientRespawn_(g_entity_t *ent) {
 		ent->locals.dead = false;
 		ent->locals.Die = G_ClientDie;
 		ent->locals.ground_entity = NULL;
-		ent->locals.health = ent->locals.max_health = 100;
-		ent->client->locals.max_boost_health = 200;
+		ent->locals.health = ent->locals.max_health = handicap;
+		ent->client->locals.max_boost_health = handicap + 100;
 		ent->locals.move_type = MOVE_TYPE_WALK;
 		ent->locals.mass = 200.0;
 		ent->locals.take_damage = true;
@@ -1043,6 +1046,16 @@ void G_ClientUserInfoChanged(g_entity_t *ent, const char *user_info) {
 		ent->s.effects = ent->s.effects | EF_INACTIVE;
 	else
 		ent->s.effects &= ~(EF_INACTIVE);
+
+	// handicap
+	uint16_t handicap = strtoul(GetUserInfo(user_info, "handicap"), NULL, 10);
+
+	if (handicap == 0)
+		handicap = 100;
+
+	handicap = Clamp(handicap, 50, 100);
+
+	cl->locals.persistent.handicap_next = handicap;
 
 	// save off the user_info in case we want to check something later
 	g_strlcpy(ent->client->locals.persistent.user_info, user_info,

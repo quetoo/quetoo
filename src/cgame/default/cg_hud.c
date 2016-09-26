@@ -41,6 +41,8 @@
 #define HUD_ARMOR_MED			40
 #define HUD_ARMOR_LOW			20
 
+#define HUD_POWERUP_LOW			5
+
 typedef struct cg_crosshair_s {
 	char name[16];
 	r_image_t *image;
@@ -146,6 +148,80 @@ static void Cg_DrawVitals(const player_state_t *ps) {
 	}
 
 	cgi.BindFont(NULL, NULL, NULL);
+}
+
+/**
+ * @brief Draws the powerup and the time remaining
+ */
+static void Cg_DrawPowerup(r_pixel_t y, const int16_t value, const r_image_t *icon) {
+	r_pixel_t x;
+
+	vec4_t pulse = { 1.0, 1.0, 1.0, 1.0 };
+	int32_t color = HUD_COLOR_STAT;
+
+	if (value < HUD_POWERUP_LOW)
+		color = HUD_COLOR_STAT_LOW;
+
+	const char *string = va("%d", value);
+
+	x = cgi.view->viewport.x + (HUD_PIC_HEIGHT / 2);
+
+	cgi.Color(pulse);
+	cgi.DrawImage(x, y, 1.0, icon);
+	cgi.Color(NULL);
+
+	x += HUD_PIC_HEIGHT;
+
+	cgi.DrawString(x, y, string, color);
+}
+
+/**
+ * @brief Draws health, ammo and armor numerics and icons.
+ */
+static void Cg_DrawPowerups(const player_state_t *ps) {
+	r_pixel_t y, ch;
+
+	if (!cg_draw_powerups->integer)
+		return;
+
+	cgi.BindFont("large", &ch, NULL);
+
+	y = cgi.view->viewport.y + (cgi.view->viewport.h / 2);
+	
+	if (ps->stats[STAT_QUAD_TIME] > 0) {
+		const int32_t timer = ps->stats[STAT_QUAD_TIME];
+
+		Cg_DrawPowerup(y, timer, cgi.LoadImage("pics/i_quad", IT_PIC));
+
+		y += HUD_PIC_HEIGHT;
+	}
+
+	cgi.BindFont(NULL, NULL, NULL);
+}
+
+/**
+ * @brief Draws the flag you are currently holding
+ */
+static void Cg_DrawHeldFlag(const player_state_t *ps) {
+	r_pixel_t x, y;
+
+	if (!cg_draw_heldflag->integer)
+		return;
+
+	vec4_t pulse = { 1.0, 1.0, 1.0, sin(cgi.client->systime / 150.0) + 0.75 };
+
+	x = cgi.view->viewport.x + (HUD_PIC_HEIGHT / 2);
+	y = cgi.view->viewport.y + ((cgi.view->viewport.h / 2) - (HUD_PIC_HEIGHT * 2));
+
+	uint16_t flag = ps->stats[STAT_HELDFLAG];
+	
+	if (flag != 0) {
+		cgi.Color(pulse);
+
+		cgi.DrawImage(x, y, 1.0, cgi.LoadImage(va("pics/i_flag%d", flag), IT_PIC));
+
+		cgi.Color(NULL);
+	}
 }
 
 /**
@@ -673,6 +749,10 @@ void Cg_DrawHud(const player_state_t *ps) {
 		return;
 
 	Cg_DrawVitals(ps);
+
+	Cg_DrawPowerups(ps);
+
+	Cg_DrawHeldFlag(ps);
 
 	Cg_DrawPickup(ps);
 
