@@ -655,14 +655,6 @@ target_link_libraries (quemap
 
 add_executable (quetoo-update
 	src/tools/update/main.c
-	src/common.c
-	src/shared.c
-	src/shared-anorms.c
-	src/mem.c
-	src/mem_buf.c
-	src/filesystem.c
-	src/sys.c
-	src/swap.c
 	src/tools/update/update-icon.rc
 )
 
@@ -671,17 +663,6 @@ target_include_directories (quetoo-update PRIVATE
 	${GLIB2_INCLUDE_DIRS}
 	src
 	src/tools/update
-)
-
-if (MINGW)
-	target_link_libraries (quetoo-update mingw32)
-endif()
-
-target_link_libraries (quetoo-update
-	${SDL2_SDLMAIN_LIBRARY}
-	${SDL2_LIBRARY}
-	${GLIB2_LIBRARIES}
-	${PHYSFS_LIBRARY}
 )
 
 # tests
