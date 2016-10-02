@@ -28,7 +28,9 @@
 #include <time.h>
 #include <zlib.h>
 
+#ifndef CMAKE_BUILD
 #include "config.h"
+#endif
 #include "zip.h"
 
 #ifdef STDC

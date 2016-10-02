@@ -242,6 +242,7 @@ add_library (objectivelymvc
 	${OBJMVC_SRC_DIR}/ObjectivelyMVC/View.c
 	${OBJMVC_SRC_DIR}/ObjectivelyMVC/ViewController.c
 	${OBJMVC_SRC_DIR}/ObjectivelyMVC/WindowController.c
+	${OBJMVC_SRC_DIR}/ObjectivelyMVC/View+JSON.c
 )
 
 target_include_directories (objectivelymvc PRIVATE
@@ -289,9 +290,41 @@ add_library (cgame MODULE
 	src/cgame/default/cg_score.c
 	src/cgame/default/cg_temp_entity.c
 	src/cgame/default/cg_view.c
+	src/cgame/default/cg_ui.c
+	src/cgame/default/cg_ui_data.c
+	src/cgame/default/views/BindTextView.c
+	src/cgame/default/views/CrosshairView.c
+	src/cgame/default/views/CvarCheckbox.c
+	src/cgame/default/views/CvarSelect.c
+	src/cgame/default/views/CvarSlider.c
+	src/cgame/default/views/CvarTextView.c
+	src/cgame/default/views/MapListCollectionItemView.c
+	src/cgame/default/views/MapListCollectionView.c
+	src/cgame/default/views/PlayerModelView.c
+	src/cgame/default/views/PrimaryButton.c
+	src/cgame/default/views/ServersTableView.c
+	src/cgame/default/views/SkinSelect.c
+	src/cgame/default/views/VideoModeSelect.c
+	src/cgame/default/viewcontrollers/CreateServerViewController.c
+	src/cgame/default/viewcontrollers/KeysViewController.c
+	src/cgame/default/viewcontrollers/MainViewController.c
+	src/cgame/default/viewcontrollers/MenuViewController.c
+	src/cgame/default/viewcontrollers/MouseViewController.c
+	src/cgame/default/viewcontrollers/MultiplayerViewController.c
+	src/cgame/default/viewcontrollers/PlayerViewController.c
+	src/cgame/default/viewcontrollers/SystemViewController.c
 	src/game/default/bg_pmove.c
 	src/shared.c
 	src/shared-anorms.c
+	src/swap.c
+	src/cvar.c
+	src/cmd.c
+	src/console.c
+	src/common.c
+	src/mem.c
+	src/mem_buf.c
+	src/filesystem.c
+	src/sys.c
 )
 
 target_include_directories (cgame PRIVATE
@@ -304,7 +337,11 @@ target_include_directories (cgame PRIVATE
 )
 
 target_link_libraries (cgame
+	${SDL2_SDLMAIN_LIBRARY}
+	${SDL2_LIBRARY}
 	${GLIB2_LIBRARIES}
+	${PHYSFS_LIBRARY}
+	objectivelymvc
 )
 
 set_target_properties (cgame PROPERTIES PREFIX "")
@@ -424,29 +461,7 @@ add_executable (quetoo
 	src/client/sound/s_mix.c
 	src/client/sound/s_music.c
 	src/client/sound/s_sample.c
-	src/client/ui/ui_data.c
 	src/client/ui/ui_main.c
-	src/client/ui/viewcontrollers/CreateServerViewController.c
-	src/client/ui/viewcontrollers/KeysViewController.c
-	src/client/ui/viewcontrollers/MainViewController.c
-	src/client/ui/viewcontrollers/MenuViewController.c
-	src/client/ui/viewcontrollers/MouseViewController.c
-	src/client/ui/viewcontrollers/MultiplayerViewController.c
-	src/client/ui/viewcontrollers/PlayerViewController.c
-	src/client/ui/viewcontrollers/SystemViewController.c
-	src/client/ui/views/BindTextView.c
-	src/client/ui/views/CrosshairView.c
-	src/client/ui/views/CvarCheckbox.c
-	src/client/ui/views/CvarSelect.c
-	src/client/ui/views/CvarSlider.c
-	src/client/ui/views/CvarTextView.c
-	src/client/ui/views/MapListCollectionItemView.c
-	src/client/ui/views/MapListCollectionView.c
-	src/client/ui/views/PlayerModelView.c
-	src/client/ui/views/PrimaryButton.c
-	src/client/ui/views/ServersTableView.c
-	src/client/ui/views/SkinSelect.c
-	src/client/ui/views/VideoModeSelect.c
 	src/collision/cm_model.c
 	src/collision/cm_test.c
 	src/collision/cm_trace.c
