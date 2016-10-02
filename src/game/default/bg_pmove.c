@@ -111,9 +111,6 @@ static void Pm_ClipVelocity(const vec3_t in, const vec3_t normal, vec3_t out, ve
 
 		const vec_t change = normal[i] * backoff;
 		out[i] = in[i] - change;
-
-		if (out[i] < PM_STOP_EPSILON && out[i] > -PM_STOP_EPSILON)
-			out[i] = 0.0;
 	}
 }
 
@@ -149,15 +146,22 @@ static void Pm_TouchEntity(struct g_entity_s *ent) {
  */
 static _Bool Pm_SlideMove(void) {
 	vec3_t planes[MAX_CLIP_PLANES];
-
-	vec3_t pos0, vel0;
-	VectorCopy(pm->s.origin, pos0);
-	VectorCopy(pm->s.velocity, vel0);
+	int32_t bump, num_bumps = MAX_CLIP_PLANES - 1;
 
 	vec_t time_remaining = pml.time;
 	int32_t num_planes = 0;
 
-	for (int32_t bump = 0; bump < MAX_CLIP_PLANES; bump++) {
+	// never turn against our ground plane
+	if (pm->s.flags & PMF_ON_GROUND) {
+		VectorCopy(pml.ground_plane.normal, planes[num_planes]);
+		num_planes++;
+	}
+
+	// or our original velocity
+	VectorNormalize2(pm->s.velocity, planes[num_planes]);
+	num_planes++;
+
+	for (bump = 0; bump < num_bumps; bump++) {
 		vec3_t pos;
 
 		if (time_remaining <= 0.0) // out of time
@@ -214,19 +218,20 @@ static _Bool Pm_SlideMove(void) {
 					continue;
 				}
 
+				// if the clipped velocity doesn't impact this plane, skip it
 				if (DotProduct(vel, planes[j]) >= 0.0) {
 					continue;
 				}
 
-				// try clipping the move to the plane
+				// we are now intersecting a second plane
 				Pm_ClipVelocity(vel, planes[j], vel, PM_CLIP_BOUNCE);
 
-				// see if it goes back into the first clip plane
+				// but if we clip against it without being deflected back, we're okay
 				if (DotProduct(vel, planes[i]) >= 0.0) {
 					continue;
 				}
 
-				// slide the original velocity along the crease
+				// we must now slide along the crease (cross product of the planes)
 				CrossProduct(planes[i], planes[j], cross);
 				VectorNormalize(cross);
 
@@ -256,13 +261,7 @@ static _Bool Pm_SlideMove(void) {
 		}
 	}
 
-	// if we were deflected backwards, clear the velocity
-	if (DotProduct(vel0, pm->s.velocity) <= 0.0) {
-		VectorCopy(pos0, pm->s.origin);
-		VectorClear(pm->s.velocity);
-	}
-
-	return num_planes == 0;
+	return bump == 0;
 }
 
 /**
@@ -377,7 +376,7 @@ static void Pm_StepSlideMove(void) {
 	if (Pm_SlideMove()) {
 
 		// attempt to step down to remain on ground
-		if ((pm->s.flags & PMF_ON_GROUND) && pm->cmd.up == 0) {
+		if ((pm->s.flags & PMF_ON_GROUND) && pm->cmd.up <= 0) {
 
 			VectorMA(pm->s.origin, PM_STEP_HEIGHT + PM_GROUND_DIST, vec3_down, down);
 			const cm_trace_t step_down = pm->Trace(pm->s.origin, down, pm->mins, pm->maxs);
@@ -958,6 +957,9 @@ static void Pm_LadderMove(void) {
 
 	speed = Clamp(speed, 0.0, PM_SPEED_LADDER);
 
+	if (speed < PM_STOP_EPSILON)
+		speed = 0.0;
+
 	Pm_Accelerate(dir, speed, PM_ACCEL_LADDER);
 
 	Pm_StepSlideMove();
@@ -1054,6 +1056,9 @@ static void Pm_WaterMove(void) {
 
 	speed = Clamp(speed, 0, PM_SPEED_WATER);
 
+	if (speed < PM_STOP_EPSILON)
+		speed = 0.0;
+
 	Pm_Accelerate(dir, speed, PM_ACCEL_WATER);
 
 	Pm_StepSlideMove();
@@ -1088,6 +1093,9 @@ static void Pm_AirMove(void) {
 	speed = VectorNormalize(dir);
 
 	speed = Clamp(speed, 0.0, PM_SPEED_AIR);
+
+	if (speed < PM_STOP_EPSILON)
+		speed = 0.0;
 
 	Pm_Accelerate(dir, speed, PM_ACCEL_AIR);
 
@@ -1149,8 +1157,11 @@ static void Pm_WalkMove(void) {
 		max_speed *= PM_SPEED_MOD_WALK;
 	}
 
-	// clamp the speed to max speed
+	// clamp the speed to min/max speed
 	speed = Clamp(speed, 0.0, max_speed);
+
+	if (speed < PM_STOP_EPSILON)
+		speed = 0.0;
 
 	// accelerate based on slickness of ground surface
 	accel = (pml.ground_surface->flags & SURF_SLICK) ? PM_ACCEL_GROUND_SLICK : PM_ACCEL_GROUND;
@@ -1220,6 +1231,9 @@ static void Pm_SpectatorMove() {
 
 	vec_t speed = VectorNormalize(vel);
 	speed = Clamp(speed, 0.0, PM_SPEED_SPECTATOR);
+
+	if (speed < PM_STOP_EPSILON)
+		speed = 0.0;
 
 	// accelerate
 	Pm_Accelerate(vel, speed, PM_ACCEL_SPECTATOR);

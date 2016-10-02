@@ -35,7 +35,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#if HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 
 #if defined(_WIN32)
 #undef WIN32_LEAN_AND_MEAN

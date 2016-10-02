@@ -41,6 +41,7 @@
  #undef WIN32_LEAN_AND_MEAN
  #define WIN32_LEAN_AND_MEAN
  #include <windows.h>
+ #include <process.h>
  #if defined(__MINGW32__)
   #if defined(__MINGW64__)
    #define RSYNC_REPOSITORY "rsync://quetoo.org/quetoo-mingw/x86_64/"
@@ -53,6 +54,13 @@
   #else
    #define RSYNC_REPOSITORY "rsync://quetoo.org/quetoo-mingw/i686/"
   #endif
+ #elif defined(_MSC_VER)
+  #if defined(_WIN64)
+   #define RSYNC_REPOSITORY "rsync://quetoo.org/quetoo-mingw/x86_64/"
+  #else
+   #define RSYNC_REPOSITORY "rsync://quetoo.org/quetoo-mingw/i686/"
+  #endif
+  #define strdup _strdup
  #endif
 #endif
 
@@ -71,7 +79,10 @@ static char *get_exe_path(void) {
 
 #elif defined(__linux__)
 
-	if (readlink(va("/proc/%d/exe", getpid()), path, sizeof(path)) > -1) {
+	char proc[1024];
+	snprintf(proc, sizeof(proc), "/proc/%d/exe", getpid());
+
+	if (readlink(proc, path, sizeof(path)) > -1) {
 		return path;
 	}
 
@@ -188,8 +199,8 @@ int main(int argc, char **argv) {
 
 			printf("Using cygwin path %s\n", cygdest);
 
-			char *target;
-			asprintf(&target, "\"%s\"", cygdest);
+			char target[1024];
+			snprintf(target, sizeof(target), "\"%s\"", cygdest);
 
 			status = _spawnlp(_P_WAIT, "rsync.exe", "rsync.exe", "-rkzhP", "--delete", "--stats",
 							  "--skip-compress=pk3",
@@ -197,8 +208,6 @@ int main(int argc, char **argv) {
 							  "--exclude=bin/rsync.exe",
 							  "--exclude=bin/quetoo-update.exe",
 							  RSYNC_REPOSITORY, target, NULL);
-
-			free(target);
 
 			const char *bins[] = {
 				"bin/cygwin1.dll",
@@ -208,15 +217,12 @@ int main(int argc, char **argv) {
 			};
 
 			for (const char **bin = bins; *bin && status == 0; bin++) {
+				char from[1024], to[1024];
 
-				char *src, *target;
-				asprintf(&src, "%s%s", RSYNC_REPOSITORY, *bin);
-				asprintf(&target, "\"%s/%s.new\"", cygdest, *bin);
+				snprintf(from, sizeof(from), "%s%s", RSYNC_REPOSITORY, *bin);
+				snprintf(to, sizeof(to), "\"%s/%s.new\"", cygdest, *bin);
 
-				status = _spawnlp(_P_WAIT, "rsync.exe", "rsync.exe", "-rkzhP", "--stats", src, target, NULL);
-
-				free(src);
-				free(target);
+				status = _spawnlp(_P_WAIT, "rsync.exe", "rsync.exe", "-rkzhP", "--stats", from, to, NULL);
 			}
 
 			free(cygdest);

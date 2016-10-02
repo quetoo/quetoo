@@ -118,7 +118,7 @@ static void G_RunThink(g_entity_t *ent) {
  */
 static _Bool G_GoodPosition(const g_entity_t *ent) {
 
-	const int32_t mask = ent->locals.clip_mask ?: MASK_SOLID;
+	const int32_t mask = ent->locals.clip_mask ? ent->locals.clip_mask : MASK_SOLID;
 
 	const cm_trace_t tr = gi.Trace(ent->s.origin, ent->s.origin, ent->mins, ent->maxs, ent, mask);
 
@@ -162,6 +162,7 @@ static _Bool G_CorrectPosition(g_entity_t *ent) {
 }
 
 #define MAX_SPEED 2400.0
+#define STOP_EPSILON PM_STOP_EPSILON
 
 /**
  * @brief
@@ -173,9 +174,10 @@ static void G_ClampVelocity(g_entity_t *ent) {
 	if (speed > MAX_SPEED) {
 		VectorScale(ent->locals.velocity, MAX_SPEED / speed, ent->locals.velocity);
 	}
+	else if (speed < STOP_EPSILON) {
+		VectorClear(ent->locals.velocity);
+	}
 }
-
-#define STOP_EPSILON PM_STOP_EPSILON
 
 /**
  * @brief Slide off of the impacted plane.
@@ -193,9 +195,6 @@ static void G_ClipVelocity(const vec3_t in, const vec3_t normal, vec3_t out, vec
 
 		const vec_t change = normal[i] * backoff;
 		out[i] = in[i] - change;
-
-		if (out[i] < STOP_EPSILON && out[i] > -STOP_EPSILON)
-			out[i] = 0.0;
 	}
 }
 
@@ -653,7 +652,7 @@ static _Bool G_Physics_Fly_Move(g_entity_t *ent, const vec_t bounce) {
 	VectorCopy(ent->s.origin, origin);
 	VectorCopy(ent->s.angles, angles);
 
-	const int32_t mask = ent->locals.clip_mask ?: MASK_SOLID;
+	const int32_t mask = ent->locals.clip_mask ? ent->locals.clip_mask : MASK_SOLID;
 
 	vec_t time_remaining = gi.frame_seconds;
 	int32_t num_planes = 0;
