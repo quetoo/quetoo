@@ -205,10 +205,11 @@ void main(void) {
 
 		out_color = diffusemap;
 		out_color *= vec4(stainmap, 1.0);
-		out_color *= 1.0 - sample_shadowmap().r;
 
 		out_color.rgb = clamp(out_color.rgb * light_diffuse  * modulate, 0.0, 32.0);
 		out_color.rgb = clamp(out_color.rgb + light_specular * modulate, 0.0, 32.0);
+
+		out_color *= 1.0 - sample_shadowmap().r;
 
 		lightgrid_fog(out_color, texture_lightgrid_fog, vertex.position, vertex.lightgrid);
 

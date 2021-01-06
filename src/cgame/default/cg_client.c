@@ -657,8 +657,8 @@ void Cg_AddClientEntity(cl_entity_t *ent, r_entity_t *e) {
 	cgi.AddStain(cgi.view, &(const r_stain_t) {
 		.origin = e->origin,
 		.projected = true,
-		.width = legs.model->radius,
-		.height = legs.model->radius,
-		.color = Color4f(.0f, .0f, .0f, .33f)
+		.width = legs.model->radius * 1.333f,
+		.height = legs.model->radius * 1.333f,
+		.color = Color4f(1.f, 0.f, 0.f, 0.f)
 	});
 }

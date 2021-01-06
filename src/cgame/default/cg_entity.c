@@ -246,9 +246,9 @@ static void Cg_AddEntity(cl_entity_t *ent) {
 		cgi.AddStain(cgi.view, &(const r_stain_t) {
 			.origin = e.origin,
 			.projected = true,
-			.width = e.model->radius,
-			.height = e.model->radius,
-			.color = Color4f(.0f, .0f, .0f, .33f)
+			.width = e.model->radius * 1.333f,
+			.height = e.model->radius * 1.333f,
+			.color = Color4f(1.f, 0.f, 0.f, 0.f)
 		});
 	}
 }

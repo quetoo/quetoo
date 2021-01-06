@@ -64,7 +64,7 @@ static void R_StainFace(const r_stain_t *stain, r_bsp_face_t *face) {
 			if (stain->shadow) {
 				byte *shadowmap = face->lightmap.shadowmap + (face->lightmap.w * t + s);
 
-				*shadowmap = 255;
+				*shadowmap = (byte) (stain->color.r * 255.f);
 
 				face->shadow_frame = stain_frame;
 			} else {
@@ -164,33 +164,62 @@ void R_AddStain(r_view_t *view, const r_stain_t *stain) {
 /**
  * @brief
  */
-static void R_ProjectStain(const r_stain_t *stain) {
+static void R_ProjectStain(const r_view_t *view, const r_stain_t *stain) {
+
+	if (!r_shadows->integer) {
+		return;
+	}
+
 	const vec3_t down = Vec3_Down();
 	const vec3_t right = Vec3(1.f, 0.f, 0.f);
 	const vec3_t up = Vec3(0.f, 1.f, 0.f);
 
-	vec3_t corner = stain->origin;
-	corner = Vec3_Fmaf(corner, -(stain->width * .5f), right);
-	corner = Vec3_Fmaf(corner, -(stain->height * .5f), up);
+	const float scale = Maxf(1.f, (1 << (4 - r_shadows->integer)));
+	const float fade_distance = 512.f;
+	float shadow_alpha = Vec3_Distance(stain->origin, view->origin) / fade_distance;
 
-	const float scale = 3.f;
+	if (shadow_alpha >= 1) {
+		return;
+	} else if (shadow_alpha > 0.8f) {
+		shadow_alpha = (shadow_alpha - 0.8f) / 0.2f;
+	} else {
+		shadow_alpha = 0.f;
+	}
 
-	for (float x = 0; x < stain->width; x += scale)
-		for (float y = 0; y < stain->height; y += scale)
+	shadow_alpha = 1.0f - shadow_alpha;
+	
+	const float w = stain->width * 0.5f;
+	const float h = stain->height * 0.5f;
+
+	for (float x = -w; x <= w; x += scale)
+		for (float y = -h; y <= h; y += scale)
 		{
-			vec3_t pt = corner;
+			if (x * x * h * h + y * y * w * w > h * h * w * w) {
+				continue;
+			}
+
+			vec3_t pt = stain->origin;
 			pt = Vec3_Fmaf(pt, x, right);
 			pt = Vec3_Fmaf(pt, y, up);
+
 			cm_trace_t tr = Cm_BoxTrace(pt, Vec3_Fmaf(pt, MAX_WORLD_COORD, down), Vec3_Zero(), Vec3_Zero(), 0, CONTENTS_MASK_SOLID);
 
 			if (tr.fraction == 1.0f) {
 				continue;
 			}
 
+			float alpha = Vec3_Distance(pt, tr.end) / fade_distance;
+
+			if (alpha >= 1) {
+				continue;
+			}
+
+			alpha = (1.0f - alpha) * shadow_alpha;
+
 			R_StainNode(&(const r_stain_t) {
 				.origin = tr.end,
 				.radius = scale,
-				.color = stain->color,
+				.color = Color3f(alpha, 0.f, 0.f),
 				.shadow = true
 			}, r_world_model->bsp->nodes);
 		}
@@ -215,7 +244,7 @@ void R_UpdateStains(const r_view_t *view) {
 	for (int32_t i = 0; i < view->num_stains; i++, stain++) {
 
 		if (stain->projected && r_shadows->integer) {
-			R_ProjectStain(stain);
+			R_ProjectStain(view, stain);
 		} else {
 			R_StainNode(stain, r_world_model->bsp->nodes);
 
