@@ -912,7 +912,6 @@ typedef struct {
 
 	_Bool shadow;
 	_Bool projected;
-	float width, height;
 
 	/**
 	 * @brief The stain radius.
