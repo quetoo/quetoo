@@ -214,7 +214,7 @@ void R_UpdateStains(const r_view_t *view) {
 	const r_stain_t *stain = view->stains;
 	for (int32_t i = 0; i < view->num_stains; i++, stain++) {
 
-		if (stain->projected && r_shadows->integer) {
+		if (stain->projected) {
 			R_ProjectStain(view, stain);
 		} else {
 			R_StainNode(stain, r_world_model->bsp->nodes);
