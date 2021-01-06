@@ -340,6 +340,11 @@ typedef struct {
 	 * @brief The stainmap for this lightmap.
 	 */
 	byte *stainmap;
+
+	/**
+	 * @brief The shadowmap for this lightmap.
+	 */
+	byte *shadowmap;
 } r_bsp_face_lightmap_t;
 
 /**
@@ -367,7 +372,7 @@ typedef struct {
 	GLvoid *elements;
 	int32_t num_elements;
 
-	int32_t stain_frame;
+	int32_t stain_frame, shadow_frame;
 } r_bsp_face_t;
 
 /**
@@ -505,6 +510,16 @@ typedef struct {
 	 * @brief The lightmap atlas.
 	 */
 	r_image_t *atlas;
+
+	/**
+	 * @brief The shadowmap image.
+	 */
+	r_image_t *shadowmap;
+
+	/**
+	 * @brief Empty shadowmap data
+	 */
+	byte *empty_shadowmap;
 } r_bsp_lightmap_t;
 
 /**
@@ -895,6 +910,10 @@ typedef struct {
 	 */
 	vec3_t origin;
 
+	_Bool shadow;
+	_Bool projected;
+	float width, height;
+
 	/**
 	 * @brief The stain radius.
 	 */
@@ -1253,10 +1272,15 @@ typedef enum {
 	TEXTURE_LIGHTGRID_FOG,
 
 	/**
+	 * @brief BSP specific textures.
+	 */
+	 TEXTURE_SHADOWMAP = TEXTURE_LIGHTGRID_FOG + 1,
+
+	/**
 	 * @brief Sprite specific textures.
 	 */
-	TEXTURE_NEXT_DIFFUSEMAP,
-	TEXTURE_DEPTH_STENCIL_ATTACHMENT,
+	TEXTURE_NEXT_DIFFUSEMAP = TEXTURE_LIGHTGRID_FOG + 1,
+	TEXTURE_DEPTH_STENCIL_ATTACHMENT
 } r_texture_t;
 
 #endif /* __R_LOCAL_H__ */

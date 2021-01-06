@@ -60,26 +60,35 @@ static void R_StainFace(const r_stain_t *stain, r_bsp_face_t *face) {
 			}
 
 			// this luxel is stained, so attenuate and blend it
-			byte *stainmap = face->lightmap.stainmap + (face->lightmap.w * t + s) * BSP_LIGHTMAP_BPP;
 
-			const float dist_squared = Vec2_LengthSquared(Vec2(i, j));
-			const float atten = (radius_squared - dist_squared) / radius_squared;
+			if (stain->shadow) {
+				byte *shadowmap = face->lightmap.shadowmap + (face->lightmap.w * t + s);
 
-			const float intensity = stain->color.a * atten * r_stains->value;
+				*shadowmap = 255;
 
-			const float src_alpha = Clampf(intensity, 0.0, 1.0);
-			const float dst_alpha = 1.0 - src_alpha;
+				face->shadow_frame = stain_frame;
+			} else {
+				byte *stainmap = face->lightmap.stainmap + (face->lightmap.w * t + s) * BSP_LIGHTMAP_BPP;
 
-			const color_t src = Color_Scale(stain->color, src_alpha);
-			const color_t dst = Color_Scale(Color3b(stainmap[0], stainmap[1], stainmap[2]), dst_alpha);
+				const float dist_squared = Vec2_LengthSquared(Vec2(i, j));
+				const float atten = (radius_squared - dist_squared) / radius_squared;
 
-			const color32_t out = Color_Color32(Color_Add(src, dst));
+				const float intensity = stain->color.a * atten * r_stains->value;
 
-			stainmap[0] = out.r;
-			stainmap[1] = out.g;
-			stainmap[2] = out.b;
+				const float src_alpha = Clampf(intensity, 0.0, 1.0);
+				const float dst_alpha = 1.0 - src_alpha;
 
-			face->stain_frame = stain_frame;
+				const color_t src = Color_Scale(stain->color, src_alpha);
+				const color_t dst = Color_Scale(Color3b(stainmap[0], stainmap[1], stainmap[2]), dst_alpha);
+
+				const color32_t out = Color_Color32(Color_Add(src, dst));
+
+				stainmap[0] = out.r;
+				stainmap[1] = out.g;
+				stainmap[2] = out.b;
+
+				face->stain_frame = stain_frame;
+			}
 		}
 	}
 }
@@ -110,7 +119,8 @@ static void R_StainNode(const r_stain_t *stain, const r_bsp_node_t *node) {
 	const r_stain_t s = {
 		.origin = Vec3_Add(stain->origin, Vec3_Scale(plane->normal, -dist)),
 		.radius = stain->radius - fabsf(dist),
-		.color = stain->color
+		.color = stain->color,
+		.shadow = stain->shadow
 	};
 
 	const int32_t side = dist > 0.f ? 0 : 1;
@@ -154,6 +164,39 @@ void R_AddStain(r_view_t *view, const r_stain_t *stain) {
 /**
  * @brief
  */
+static void R_ProjectStain(const r_stain_t *stain) {
+	const vec3_t down = Vec3_Down();
+	const vec3_t right = Vec3(1.f, 0.f, 0.f);
+	const vec3_t up = Vec3(0.f, 1.f, 0.f);
+
+	vec3_t corner = stain->origin;
+	corner = Vec3_Fmaf(corner, -(stain->width * .5f), right);
+	corner = Vec3_Fmaf(corner, -(stain->height * .5f), up);
+
+	for (float x = 0; x < stain->width; x++)
+		for (float y = 0; y < stain->height; y++)
+		{
+			vec3_t pt = corner;
+			pt = Vec3_Fmaf(pt, x, right);
+			pt = Vec3_Fmaf(pt, y, up);
+			cm_trace_t tr = Cm_BoxTrace(pt, Vec3_Fmaf(pt, MAX_WORLD_COORD, down), Vec3_Zero(), Vec3_Zero(), 0, CONTENTS_MASK_SOLID);
+
+			if (tr.fraction == 1.0f) {
+				continue;
+			}
+
+			R_StainNode(&(const r_stain_t) {
+				.origin = tr.end,
+				.radius = 1.f,
+				.color = stain->color,
+				.shadow = true
+			}, r_world_model->bsp->nodes);
+		}
+}
+
+/**
+ * @brief
+ */
 void R_UpdateStains(const r_view_t *view) {
 	
 	if (!view->num_stains) {
@@ -169,28 +212,36 @@ void R_UpdateStains(const r_view_t *view) {
 	const r_stain_t *stain = view->stains;
 	for (int32_t i = 0; i < view->num_stains; i++, stain++) {
 
-		R_StainNode(stain, r_world_model->bsp->nodes);
+		if (stain->projected && r_shadows->integer) {
+			R_ProjectStain(stain);
+		} else {
+			R_StainNode(stain, r_world_model->bsp->nodes);
 
-		const r_entity_t *e = view->entities;
-		for (int32_t j = 0; j < view->num_entities; j++, e++) {
-			if (e->model && e->model->type == MOD_BSP_INLINE) {
+			const r_entity_t *e = view->entities;
+			for (int32_t j = 0; j < view->num_entities; j++, e++) {
+				if (e->model && e->model->type == MOD_BSP_INLINE) {
 
-				r_stain_t s = *stain;
-				Matrix4x4_Transform(&e->inverse_matrix, s.origin.xyz, s.origin.xyz);
+					r_stain_t s = *stain;
+					Matrix4x4_Transform(&e->inverse_matrix, s.origin.xyz, s.origin.xyz);
 
-				R_StainNode(&s, e->model->bsp_inline->head_node);
+					R_StainNode(&s, e->model->bsp_inline->head_node);
+				}
 			}
 		}
 	}
 
 	const r_bsp_model_t *bsp = r_world_model->bsp;
-
+	
 	glBindTexture(GL_TEXTURE_2D_ARRAY, bsp->lightmap->atlas->texnum);
+	glBindTexture(GL_TEXTURE_2D, bsp->lightmap->shadowmap->texnum);
+
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, bsp->lightmap->shadowmap->width, bsp->lightmap->shadowmap->height, GL_RED, GL_UNSIGNED_BYTE, bsp->lightmap->empty_shadowmap);
 
 	const r_bsp_face_t *face = bsp->faces;
 	for (int32_t i = 0; i < bsp->num_faces; i++, face++) {
 
 		if (face->stain_frame == stain_frame) {
+
 			glTexSubImage3D(GL_TEXTURE_2D_ARRAY,
 					0,
 					face->lightmap.s,
@@ -203,7 +254,25 @@ void R_UpdateStains(const r_view_t *view) {
 					GL_UNSIGNED_BYTE,
 					face->lightmap.stainmap);
 		}
+
+		if (face->shadow_frame == stain_frame && r_shadows->integer) {
+
+			glTexSubImage2D(GL_TEXTURE_2D,
+					0,
+					face->lightmap.s,
+					face->lightmap.t,
+					face->lightmap.w,
+					face->lightmap.h,
+					GL_RED,
+					GL_UNSIGNED_BYTE,
+					face->lightmap.shadowmap);
+
+			memset(face->lightmap.shadowmap, 0, face->lightmap.w * face->lightmap.h);
+		}
 	}
+	
+	glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+	glBindTexture(GL_TEXTURE_2D, 0);
 
 	R_GetError(NULL);
 }

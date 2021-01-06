@@ -50,6 +50,7 @@ static void R_RegisterModel(r_media_t *self) {
 
 		if (mod->bsp->lightmap) {
 			R_RegisterDependency(self, (r_media_t *) mod->bsp->lightmap->atlas);
+			R_RegisterDependency(self, (r_media_t *) mod->bsp->lightmap->shadowmap);
 		}
 
 		if (mod->bsp->lightgrid) {
@@ -199,8 +200,6 @@ void R_InitModels(void) {
 
 	R_InitMeshProgram();
 
-	R_InitMeshShadowProgram();
-
 	glFrontFace(GL_CW);
 
 	R_GetError(NULL);
@@ -216,6 +215,4 @@ void R_ShutdownModels(void) {
 	R_ShutdownBspProgram();
 
 	R_ShutdownMeshProgram();
-
-	R_ShutdownMeshShadowProgram();
 }

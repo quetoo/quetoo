@@ -45,6 +45,7 @@ static struct {
 	GLint texture_stage;
 	GLint texture_warp;
 	GLint texture_lightgrid_fog;
+	GLint texture_shadowmap;
 
 	GLint alpha_threshold;
 
@@ -493,6 +494,9 @@ void R_DrawWorld(const r_view_t *view) {
 	glActiveTexture(GL_TEXTURE0 + TEXTURE_LIGHTMAP);
 	glBindTexture(GL_TEXTURE_2D_ARRAY, r_world_model->bsp->lightmap->atlas->texnum);
 
+	glActiveTexture(GL_TEXTURE0 + TEXTURE_SHADOWMAP);
+	glBindTexture(GL_TEXTURE_2D, r_world_model->bsp->lightmap->shadowmap->texnum);
+
 	glActiveTexture(GL_TEXTURE0 + TEXTURE_WARP);
 	glBindTexture(GL_TEXTURE_2D, r_bsp_program.warp_image->texnum);
 
@@ -591,6 +595,7 @@ void R_InitBspProgram(void) {
 	r_bsp_program.texture_stage = glGetUniformLocation(r_bsp_program.name, "texture_stage");
 	r_bsp_program.texture_warp = glGetUniformLocation(r_bsp_program.name, "texture_warp");
 	r_bsp_program.texture_lightgrid_fog = glGetUniformLocation(r_bsp_program.name, "texture_lightgrid_fog");
+	r_bsp_program.texture_shadowmap = glGetUniformLocation(r_bsp_program.name, "texture_shadowmap");
 
 	r_bsp_program.alpha_threshold = glGetUniformLocation(r_bsp_program.name, "alpha_threshold");
 
@@ -619,11 +624,12 @@ void R_InitBspProgram(void) {
 	glUniform1i(r_bsp_program.texture_stage, TEXTURE_STAGE);
 	glUniform1i(r_bsp_program.texture_warp, TEXTURE_WARP);
 	glUniform1i(r_bsp_program.texture_lightgrid_fog, TEXTURE_LIGHTGRID_FOG);
+	glUniform1i(r_bsp_program.texture_shadowmap, TEXTURE_SHADOWMAP);
 
 	r_bsp_program.warp_image = (r_image_t *) R_AllocMedia("r_warp_image", sizeof(r_image_t), R_MEDIA_IMAGE);
 	r_bsp_program.warp_image->media.Retain = R_RetainImage;
 	r_bsp_program.warp_image->media.Free = R_FreeImage;
-
+	
 	r_bsp_program.warp_image->width = r_bsp_program.warp_image->height = WARP_IMAGE_SIZE;
 	r_bsp_program.warp_image->type = IT_PROGRAM;
 

@@ -172,6 +172,9 @@ static void R_LoadBspFaces(r_bsp_model_t *bsp) {
 		lm->stainmap = Mem_LinkMalloc(lm->w * lm->h * BSP_LIGHTMAP_BPP, bsp->faces);
 		memset(lm->stainmap, 0xff, lm->w * lm->h * BSP_LIGHTMAP_BPP);
 
+		lm->shadowmap = Mem_LinkMalloc(lm->w * lm->h, bsp->faces);
+		memset(lm->shadowmap, 0x00, lm->w * lm->h);
+
 		if (out->texinfo->material->cm->flags & STAGE_FLARE) {
 			R_LoadFlare(bsp, out);
 		}
@@ -422,6 +425,21 @@ static void R_LoadBspLightmap(r_model_t *mod) {
 	R_UploadImage(out->atlas, GL_RGB, data);
 
 	Mem_Free(data);
+
+	out->shadowmap = (r_image_t *) R_AllocMedia("shadowmap", sizeof(r_image_t), R_MEDIA_IMAGE);
+	out->shadowmap->media.Free = R_FreeImage;
+	out->shadowmap->type = IT_PROGRAM;
+	out->shadowmap->width = out->width;
+	out->shadowmap->height = out->width;
+	out->shadowmap->depth = 0;
+
+	const size_t out_shadow_size = out->shadowmap->width * out->shadowmap->height * out->shadowmap->depth;
+	
+	out->empty_shadowmap = Mem_LinkMalloc(out_size, mod->bsp);
+
+	memset(out->empty_shadowmap, 0x00, out_shadow_size);
+
+	R_UploadImage(out->shadowmap, GL_RED, out->empty_shadowmap);
 }
 
 /**

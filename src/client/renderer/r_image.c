@@ -164,6 +164,7 @@ void R_SetupImage(r_image_t *image, GLenum target, GLenum format, GLsizei levels
 	switch (format) {
 		case GL_RGB:
 		case GL_RGBA:
+		case GL_RED:
 			break;
 		default:
 			Com_Error(ERROR_DROP, "Unsupported format %d\n", format);
@@ -198,7 +199,7 @@ void R_SetupImage(r_image_t *image, GLenum target, GLenum format, GLsizei levels
 	}
 
 	if (GLAD_GL_ARB_texture_storage) {
-		const GLenum internal_format = (format == GL_RGBA) ? GL_RGBA8 : GL_RGB8;
+		const GLenum internal_format = (format == GL_RGBA) ? GL_RGBA8 : (format == GL_RED) ? GL_R8 : GL_RGB8;
 		if (image->depth) {
 			glTexStorage3D(target, levels, internal_format, image->width, image->height, image->depth);
 

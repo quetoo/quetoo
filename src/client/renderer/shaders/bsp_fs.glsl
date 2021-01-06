@@ -24,6 +24,7 @@ uniform sampler2DArray texture_lightmap;
 uniform sampler2D texture_stage;
 uniform sampler2D texture_warp;
 uniform sampler3D texture_lightgrid_fog;
+uniform sampler2D texture_shadowmap;
 
 uniform float alpha_threshold;
 
@@ -54,6 +55,17 @@ vec4 sample_lightmap(int index) {
 		return texture_bicubic(texture_lightmap, vec3(vertex.lightmap, index));
 	} else {
 		return texture(texture_lightmap, vec3(vertex.lightmap, index));
+	}
+}
+
+/**
+ * @brief Samples the shadowmap with either bilinear or bicubic sampling.
+ */
+vec4 sample_shadowmap() {
+	if (bicubic > 0) {
+		return texture_bicubic(texture_shadowmap, vertex.lightmap);
+	} else {
+		return texture(texture_shadowmap, vertex.lightmap);
 	}
 }
 
@@ -193,6 +205,7 @@ void main(void) {
 
 		out_color = diffusemap;
 		out_color *= vec4(stainmap, 1.0);
+		out_color *= 1.0 - sample_shadowmap().r;
 
 		out_color.rgb = clamp(out_color.rgb * light_diffuse  * modulate, 0.0, 32.0);
 		out_color.rgb = clamp(out_color.rgb + light_specular * modulate, 0.0, 32.0);

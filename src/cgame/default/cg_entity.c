@@ -240,6 +240,17 @@ static void Cg_AddEntity(cl_entity_t *ent) {
 
 	// add to view list
 	cgi.AddEntity(cgi.view, &e);
+
+	// add shadow
+	if (!(e.effects & EF_NO_SHADOW)) {
+		cgi.AddStain(cgi.view, &(const r_stain_t) {
+			.origin = e.origin,
+			.projected = true,
+			.width = e.model->radius,
+			.height = e.model->radius,
+			.color = Color4f(.0f, .0f, .0f, .33f)
+		});
+	}
 }
 
 /**

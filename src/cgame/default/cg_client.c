@@ -652,4 +652,13 @@ void Cg_AddClientEntity(cl_entity_t *ent, r_entity_t *e) {
 	if (s->model4) {
 		cgi.Warn("Unsupported model_index4\n");
 	}
+	
+	// add shadow
+	cgi.AddStain(cgi.view, &(const r_stain_t) {
+		.origin = e->origin,
+		.projected = true,
+		.width = legs.model->radius,
+		.height = legs.model->radius,
+		.color = Color4f(.0f, .0f, .0f, .33f)
+	});
 }
