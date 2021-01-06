@@ -205,10 +205,6 @@ void R_UpdateStains(const r_view_t *view) {
 		return;
 	}
 
-	if (r_world_model->bsp->lightmap == NULL) {
-		return;
-	}
-
 	stain_frame++;
 
 	const r_stain_t *stain = view->stains;
