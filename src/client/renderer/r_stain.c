@@ -173,8 +173,10 @@ static void R_ProjectStain(const r_stain_t *stain) {
 	corner = Vec3_Fmaf(corner, -(stain->width * .5f), right);
 	corner = Vec3_Fmaf(corner, -(stain->height * .5f), up);
 
-	for (float x = 0; x < stain->width; x++)
-		for (float y = 0; y < stain->height; y++)
+	const float scale = 3.f;
+
+	for (float x = 0; x < stain->width; x += scale)
+		for (float y = 0; y < stain->height; y += scale)
 		{
 			vec3_t pt = corner;
 			pt = Vec3_Fmaf(pt, x, right);
@@ -187,7 +189,7 @@ static void R_ProjectStain(const r_stain_t *stain) {
 
 			R_StainNode(&(const r_stain_t) {
 				.origin = tr.end,
-				.radius = 1.f,
+				.radius = scale,
 				.color = stain->color,
 				.shadow = true
 			}, r_world_model->bsp->nodes);
